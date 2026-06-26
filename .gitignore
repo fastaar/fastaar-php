@@ -1,0 +1,19 @@
+/vendor/
+/composer.lock
+
+# Environment
+.env
+
+# Testing
+.phpunit.result.cache
+.phpunit.cache/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
