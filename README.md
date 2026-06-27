@@ -58,6 +58,7 @@ http_response_code(200);
 $payment  = $fastaar->getPayment('01jxyz...');                   // retrieve one
 $payment  = $fastaar->findByInvoiceNumber('ORDER-42');            // look up by your reference
 $payments = $fastaar->listPayments(['status' => 'completed']);
+$payment  = $fastaar->refundPayment('01jxyz...');                 // refund a completed payment
 ```
 
 ## Customers

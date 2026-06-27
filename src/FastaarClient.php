@@ -72,6 +72,18 @@ class FastaarClient
         return $payments[0] ?? null;
     }
 
+    /**
+     * Refund a completed payment. Only payments with status `completed` can be refunded.
+     *
+     * @return array<string, mixed> The updated payment object with status `refunded`.
+     *
+     * @throws FastaarException if the payment is not in a refundable state.
+     */
+    public function refundPayment(string $paymentId): array
+    {
+        return $this->request('POST', '/api/v1/payments/'.rawurlencode($paymentId).'/refund');
+    }
+
     // -------------------------------------------------------------------------
     // Customers
     // -------------------------------------------------------------------------
@@ -163,8 +175,8 @@ class FastaarClient
 
         if ($statusCode >= 400 || ! is_array($decoded)) {
             throw new FastaarException(
-                $decoded['error']['message'] ?? "Fastaar API returned HTTP {$statusCode}.",
-                $decoded['error']['type'] ?? 'api_error',
+                $decoded['message'] ?? "Fastaar API returned HTTP {$statusCode}.",
+                $decoded['code'] ?? 'api_error',
                 $statusCode,
             );
         }
