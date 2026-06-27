@@ -11,17 +11,21 @@ class FastaarClient
         private readonly int $timeoutSeconds = 15,
     ) {}
 
+    // -------------------------------------------------------------------------
+    // Payments
+    // -------------------------------------------------------------------------
+
     /**
      * Create a payment intent.
      *
-     * Reusing the same `invoice_id` returns the existing payment instead of
+     * Reusing the same `invoice_number` returns the existing payment instead of
      * creating a duplicate (HTTP 200 rather than 201), so retries are safe.
      * Supply `success_url`/`cancel_url` to return the customer to your site
-     * after checkout; Fastaar appends `payment_id` (and `invoice_id`) to them.
+     * after checkout; Fastaar appends `payment_id` (and `invoice_number`) to them.
      *
      * @param  array{
      *     amount: int|float|string,
-     *     invoice_id?: string,
+     *     invoice_number: string,
      *     success_url?: string,
      *     cancel_url?: string,
      *     metadata?: array<string, string>
@@ -46,7 +50,7 @@ class FastaarClient
     /**
      * List payments, newest first.
      *
-     * @param  array{status?: string, invoice_id?: string, per_page?: int, page?: int}  $params
+     * @param  array{status?: string, invoice_number?: string, per_page?: int, page?: int}  $params
      * @return array<int, array<string, mixed>>
      */
     public function listPayments(array $params = []): array
@@ -57,15 +61,64 @@ class FastaarClient
     }
 
     /**
-     * Find the most recent payment for one of your invoice IDs, or null if none.
+     * Find the most recent payment for one of your invoice numbers, or null if none.
      *
      * @return array<string, mixed>|null
      */
-    public function findByInvoiceId(string $invoiceId): ?array
+    public function findByInvoiceNumber(string $invoiceNumber): ?array
     {
-        $payments = $this->listPayments(['invoice_id' => $invoiceId]);
+        $payments = $this->listPayments(['invoice_number' => $invoiceNumber]);
 
         return $payments[0] ?? null;
+    }
+
+    // -------------------------------------------------------------------------
+    // Customers
+    // -------------------------------------------------------------------------
+
+    /**
+     * List customers, newest first.
+     *
+     * @param  array{email?: string, phone?: string, per_page?: int, page?: int}  $params
+     * @return array<int, array<string, mixed>>
+     */
+    public function listCustomers(array $params = []): array
+    {
+        $query = $params === [] ? '' : '?'.http_build_query($params);
+
+        return $this->request('GET', '/api/v1/customers'.$query);
+    }
+
+    /**
+     * Create a customer.
+     *
+     * @param  array{name: string, phone: string, email?: string, address?: string, notes?: string}  $params
+     * @return array<string, mixed>
+     */
+    public function createCustomer(array $params): array
+    {
+        return $this->request('POST', '/api/v1/customers', $params);
+    }
+
+    /**
+     * Retrieve a customer by ID.
+     *
+     * @return array<string, mixed>
+     */
+    public function getCustomer(int $customerId): array
+    {
+        return $this->request('GET', '/api/v1/customers/'.$customerId);
+    }
+
+    /**
+     * Update a customer (partial update — only the fields you send are changed).
+     *
+     * @param  array{name?: string, email?: string|null, phone?: string|null, address?: string|null, notes?: string|null}  $params
+     * @return array<string, mixed>
+     */
+    public function updateCustomer(int $customerId, array $params): array
+    {
+        return $this->request('PATCH', '/api/v1/customers/'.$customerId, $params);
     }
 
     /**
@@ -101,14 +154,10 @@ class FastaarClient
         $response = curl_exec($handle);
 
         if ($response === false) {
-            $error = curl_error($handle);
-            curl_close($handle);
-
-            throw new FastaarException("Could not reach the Fastaar API: {$error}", 'connection_error');
+            throw new FastaarException('Could not reach the Fastaar API: '.curl_error($handle), 'connection_error');
         }
 
         $statusCode = (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
-        curl_close($handle);
 
         $decoded = json_decode($response, true);
 

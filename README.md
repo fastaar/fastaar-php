@@ -17,7 +17,7 @@ $fastaar = new FastaarClient(apiKey: getenv('FASTAAR_API_KEY')); // fk_live_... 
 
 $payment = $fastaar->createPayment([
     'amount' => 1250,
-    'invoice_id' => 'ORDER-42',                         // your order reference
+    'invoice_number' => 'ORDER-42',                         // required — your order reference
     'success_url' => 'https://shop.example.com/thanks', // optional, customer returns here
     'cancel_url' => 'https://shop.example.com/cart',    // optional
 ]);
@@ -26,8 +26,8 @@ header('Location: '.$payment['checkout_url']);
 exit;
 ```
 
-Passing the same `invoice_id` again returns the existing payment instead of
-creating a duplicate, so a retried request never double-charges.
+`invoice_number` is idempotent: retrying with the same value returns the existing payment
+instead of creating a duplicate, so a dropped connection never double-charges.
 
 ## Confirm the order from a webhook
 
@@ -45,19 +45,39 @@ if (! WebhookSignature::verify(getenv('FASTAAR_WEBHOOK_SECRET'), $rawBody, $sign
 $event = json_decode($rawBody, true);
 
 if ($event['event'] === 'payment.completed') {
-    $orderId = $event['data']['invoice_id'];
+    $orderId = $event['data']['invoice_number'];
     // mark the order as paid, idempotently (use $event['data']['id'] as the key)
 }
 
 http_response_code(200);
 ```
 
-## Other calls
+## Other payment calls
 
 ```php
-$payment = $fastaar->getPayment('01jxyz...');                 // retrieve one
-$payment = $fastaar->findByInvoiceId('ORDER-42');             // look up by your reference
+$payment  = $fastaar->getPayment('01jxyz...');                   // retrieve one
+$payment  = $fastaar->findByInvoiceNumber('ORDER-42');            // look up by your reference
 $payments = $fastaar->listPayments(['status' => 'completed']);
+```
+
+## Customers
+
+Store customer records against your Fastaar account to attach them to payments collected via payment links.
+
+```php
+// Create a customer — name and phone are required
+$customer = $fastaar->createCustomer([
+    'name'    => 'Rahim Uddin',
+    'phone'   => '01712345678',
+    'email'   => 'rahim@example.com',   // optional
+    'address' => 'Dhaka, Bangladesh',   // optional
+    'notes'   => 'VIP customer',        // optional
+]);
+
+// Retrieve, update, list
+$customer  = $fastaar->getCustomer($customer['id']);
+$customer  = $fastaar->updateCustomer($customer['id'], ['name' => 'Rahim Ahmed']);
+$customers = $fastaar->listCustomers(['email' => 'rahim@example.com']);
 ```
 
 Errors throw `Fastaar\FastaarException` with `->errorType` (e.g. `authentication_error`,
