@@ -15,6 +15,8 @@ use Fastaar\FastaarClient;
 
 $fastaar = new FastaarClient(apiKey: getenv('FASTAAR_API_KEY')); // fk_live_... or fk_test_...
 
+// The key must have the `payments:write` ability (and an expiry in the future, if set)
+// or this call returns a 403 `ability_denied` / 401 `authentication_error` error.
 $payment = $fastaar->createPayment([
     'amount' => 1250,
     'invoice_number' => 'ORDER-42',                         // required — your order reference
