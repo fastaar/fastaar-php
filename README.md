@@ -1,5 +1,10 @@
 # Fastaar PHP SDK
 
+[![CI](https://github.com/fastaar/fastaar-php/actions/workflows/ci.yml/badge.svg)](https://github.com/fastaar/fastaar-php/actions/workflows/ci.yml)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/fastaar/fastaar-php.svg?style=flat-square)](https://packagist.org/packages/fastaar/fastaar-php)
+[![Total Downloads](https://img.shields.io/packagist/dt/fastaar/fastaar-php.svg?style=flat-square)](https://packagist.org/packages/fastaar/fastaar-php)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Accept bKash & Nagad payments on any PHP website via [Fastaar](https://fastaar.com).
 
 ## Install
