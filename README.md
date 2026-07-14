@@ -20,6 +20,7 @@ $fastaar = new FastaarClient(apiKey: getenv('FASTAAR_API_KEY')); // fk_live_... 
 $payment = $fastaar->createPayment([
     'amount' => 1250,
     'invoice_number' => 'ORDER-42',                         // required — your order reference
+    'customer_id' => $customer['id'] ?? null,           // optional — attach an existing customer
     'success_url' => 'https://shop.example.com/thanks', // optional, customer returns here
     'cancel_url' => 'https://shop.example.com/cart',    // optional
 ]);
@@ -28,8 +29,11 @@ header('Location: '.$payment['checkout_url']);
 exit;
 ```
 
-`invoice_number` is idempotent: retrying with the same value returns the existing payment
-instead of creating a duplicate, so a dropped connection never double-charges.
+`invoice_number` is idempotent: if a payment already exists for it and hasn't reached `failed`
+or `expired`, creating another one throws a `FastaarException` with error type
+`duplicate_invoice_number` (HTTP 409) instead of creating a duplicate — so a dropped connection
+never double-charges. Use `findByInvoiceNumber()` to look the existing payment up rather than
+retrying blindly.
 
 ## Confirm the order from a webhook
 
@@ -60,7 +64,9 @@ http_response_code(200);
 $payment  = $fastaar->getPayment('01jxyz...');                   // retrieve one
 $payment  = $fastaar->findByInvoiceNumber('ORDER-42');            // look up by your reference
 $payments = $fastaar->listPayments(['status' => 'completed']);
-$payment  = $fastaar->refundPayment('01jxyz...');                 // refund a completed payment
+$payment  = $fastaar->refundPayment('01jxyz...');                 // refund the full remaining balance
+$payment  = $fastaar->refundPayment('01jxyz...', 200);            // or refund only part of it
+$refunds  = $fastaar->listRefunds('01jxyz...');                   // full refund history, newest first
 ```
 
 ## Customers

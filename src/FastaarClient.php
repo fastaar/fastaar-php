@@ -18,14 +18,17 @@ class FastaarClient
     /**
      * Create a payment intent.
      *
-     * Reusing the same `invoice_number` returns the existing payment instead of
-     * creating a duplicate (HTTP 200 rather than 201), so retries are safe.
+     * Reusing the same `invoice_number` while a previous payment for it is still
+     * active (not `failed`/`expired`) throws a `FastaarException` with error type
+     * `duplicate_invoice_number` (HTTP 409) instead of creating a duplicate — look
+     * the existing payment up with `findByInvoiceNumber()` rather than retrying blindly.
      * Supply `success_url`/`cancel_url` to return the customer to your site
      * after checkout; Fastaar appends `payment_id` (and `invoice_number`) to them.
      *
      * @param  array{
      *     amount: int|float|string,
      *     invoice_number: string,
+     *     customer_id?: int,
      *     success_url?: string,
      *     cancel_url?: string,
      *     metadata?: array<string, string>
@@ -73,15 +76,31 @@ class FastaarClient
     }
 
     /**
-     * Refund a completed payment. Only payments with status `completed` can be refunded.
+     * Refund a payment, in full or in part. Only payments with status `completed` or
+     * `partially_refunded` can be refunded. Pass an amount to refund only part of the
+     * remaining balance; omit it to refund whatever is still refundable.
      *
-     * @return array<string, mixed> The updated payment object with status `refunded`.
+     * @return array<string, mixed> The updated payment object. `status` is `refunded` once
+     *                              the full amount has been refunded, or `partially_refunded`
+     *                              if some balance remains.
      *
-     * @throws FastaarException if the payment is not in a refundable state.
+     * @throws FastaarException if the payment is not in a refundable state, or the amount
+     *                          exceeds the remaining refundable balance.
      */
-    public function refundPayment(string $paymentId): array
+    public function refundPayment(string $paymentId, int|float|string|null $amount = null): array
     {
-        return $this->request('POST', '/api/v1/payments/'.rawurlencode($paymentId).'/refund');
+        return $this->request('POST', '/api/v1/payments/'.rawurlencode($paymentId).'/refund', $amount !== null ? ['amount' => $amount] : null);
+    }
+
+    /**
+     * List a payment's refund history, newest first — one entry per refund call, even
+     * across several partial refunds.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function listRefunds(string $paymentId): array
+    {
+        return $this->request('GET', '/api/v1/payments/'.rawurlencode($paymentId).'/refunds');
     }
 
     // -------------------------------------------------------------------------
