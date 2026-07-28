@@ -1,6 +1,6 @@
 {
     "name": "fastaar/fastaar-php",
-    "description": "PHP SDK for the Fastaar payment gateway — accept bKash & Nagad payments in Bangladesh.",
+    "description": "PHP SDK for the Fastaar payment verification service — accept bKash & Nagad payments in Bangladesh.",
     "type": "library",
     "license": "MIT",
     "keywords": ["fastaar", "bkash", "nagad", "payments", "bangladesh"],
